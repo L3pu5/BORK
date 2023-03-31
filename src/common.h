@@ -7,8 +7,9 @@
 #define DEAFULT_CONSTANT_CAPACITY       20
 #define DEFAULT_SYMBOLTABLE_CAPACITY    20
 #define DEFAULT_OPCODE_CAPACITY         60
+#define DEFAULT_VM_STACK_CAPACITY       256
 
 #define Byte    uint8_t
-#define Value   uint32_t
+//#define Value   uint32_t
 
 #endif

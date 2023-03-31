@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "lexer.h"
 #include "common.h"
@@ -75,6 +76,10 @@ static char peek() {
     return lex.current[1];
 }
 
+static char peek_n(int n){
+    return lex.current[n-1];
+}
+
 static bool EoF(){
     return( peek() == '\0');
 }
@@ -83,9 +88,23 @@ static bool isNumber(char c){
     return ( c >= '0' && c <= '9');
 }
 
+static bool isAlpha(char c){
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+static bool isAlphaNumeric(char c){
+    return isNumber(c) && isAlpha(c);
+}
+
 static void advance(){
     lex.current++;
     lex.char_offset++;
+    return;
+}
+
+static void advance_n(int n){
+    lex.current += n;
+    lex.char_offset += n;
     return;
 }
 
@@ -104,6 +123,42 @@ static void number(){
     return;
 }
 
+static bool match(char* input, char * challenge, int length){
+    char buffer[length];
+    memcpy(buffer, input, length);
+    if( memcmp(buffer, challenge, length) == 0){
+        return true;
+    }
+    return false;
+}
+
+static void identifier(){
+    switch(cursor()){
+        case 'i':{
+            if (match(lex.previous, "i32", 3) && !isAlphaNumeric(peek_n(3))){
+                advance_n(3);
+                TokenStack_push(lex.currentStack, makeToken(lex.previous, 3, TOKEN_I32));
+                return;
+            }
+            break;
+        }
+        default:
+            advance();
+            while(isAlpha(cursor())){
+                advance();
+            }
+            TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_VAR));
+            return;
+    }
+
+}
+
+static void skipWhiteSpace(){
+    while(cursor() == ' ' || cursor() == '\t'){
+        advance();
+    }
+}
+
 
 
 TokenStack* Lexer_parse() {
@@ -114,6 +169,8 @@ TokenStack* Lexer_parse() {
             TokenStack_push(lex.currentStack, makeToken(NULL, 0, TOKEN_EOF));
             return lex.currentStack;
         }
+
+        skipWhiteSpace();
         // We set the previous character to the current one
         lex.previous = lex.current;
         //Is this a number?
@@ -121,6 +178,11 @@ TokenStack* Lexer_parse() {
             number();
             advance();
             continue;        
+        }
+
+        if (isAlpha(cursor())){
+            identifier();
+            continue;
         }
 
         switch(cursor()){
@@ -142,9 +204,15 @@ TokenStack* Lexer_parse() {
             case '/':
                 TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_SLASH));
                 break;
+            case '^':
+                TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_CARROT));
+                break;
+            case ':':
+                TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_COLON));
+                break;            
             case '\n':
                 lex.line++;
-                lex.char_offset = 0;
+                lex.char_offset = -1;
                 break;
             case ';':
                 TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_SEMI));

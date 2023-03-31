@@ -4,15 +4,21 @@
 #include "common.h"
 #include "symbol.h"
 #include "lexer.h"
+#include "value.h"
 
 //One byte, up to 0xFF
 typedef enum {
+    //DATA
     OP_CONSTANT,
+    //LOG
     OP_NEG,
+   //ARITH 
     OP_ADD,
     OP_SUB,
     OP_MUL,
     OP_DIV,
+    OP_POW,
+    //CORE
     OP_BARK,
     OP_RET,
 } OpCode;
@@ -42,6 +48,7 @@ typedef enum {
     ORDER_COMPARISON,   // > < 
     ORDER_TERM,         // + -
     ORDER_FACTOR,       // * /
+    ORDER_POWER,        // ^
     ORDER_UNARY,        // - ~
     ORDER_CALL,         // 
     ORDER_PRIMARY       // Identifer/const
@@ -57,5 +64,6 @@ typedef struct {
 void Segment_init(Segment* seg);
 void Segment_free(Segment* seg);
 void Segment_compile(Segment* seg, TokenStack* tStack);
+const char* OpCode_Disassemble(OpCode op);
 
 #endif

@@ -4,8 +4,8 @@
 // #include "common.h"
 
 // typedef enum {
-//     INT_8,
-//     CHAR,
+//     VALUE,
+//     
 // } SYMBOL_TYPE;
 
 // typedef struct {

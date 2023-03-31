@@ -1,28 +1,3 @@
-5+5
-
-v DEC 
-x := (3 + 5) * 9 
-    ^ Expression
-
-3 /<- (x.size) 
-  v 
-3 / -4
-
--> PUSH C1
--> PUSH C2
--> ADD 
-VM :=> Pop c1, c2 , push c1+c2
--> 10
--> RET
-
-bark! 10
-
-bork x 10
-x + 5
-bark! x
-
-- Arithmetic
-- Print via "bark"
-
-12347_
-^--- X
+1 +5;
+32-7;
+i32 x: 12;

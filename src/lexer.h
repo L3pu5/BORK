@@ -7,12 +7,17 @@ typedef enum {
     TOKEN_PAREN_RIGHT,
     //Primitives
     TOKEN_NUMBER,
+    TOKEN_I32,
     //ARITHMETIC
     TOKEN_PLUS,
     TOKEN_MINUS,
     TOKEN_STAR,
     TOKEN_SLASH,
+    TOKEN_CARROT,
+    //VARIABLES
+    TOKEN_VAR,
     //Core
+    TOKEN_COLON,
     TOKEN_SEMI,
     TOKEN_BARK,
     TOKEN_EOF,

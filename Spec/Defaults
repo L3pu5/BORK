@@ -1,0 +1,3 @@
+Default variables:
+    Inline integer consants are I32 (uint32_t) by default.
+    Bork does NOT allow floats. INTEGERS ONLY.

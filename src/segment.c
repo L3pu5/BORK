@@ -1,14 +1,37 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "segment.h"
 #include "debug.h"
+#include "value.h"
 
 
 ParseRule Parse_Rules[];
 static void parse(Segment* seg, Order order);
 static ParseRule getRule(TOKEN_TYPE type);
+
+const char* OpCode_Disassemble(OpCode op){
+    switch(op){
+        case OP_ADD:
+            return "ADD";
+        case OP_SUB:
+            return "SUB";
+        case OP_MUL:
+            return "MUL";
+        case OP_DIV:
+            return "DIV";
+        case OP_CONSTANT:
+            return "CNST";
+        case OP_RET:
+            return "RET";
+        default:
+            printf("Unimplemented OpCode Disassemble\n");
+            //exit(12);
+            return "NOT IMPLEMENTED";
+    }
+}
 
 void Segment_init(Segment* seg){
     seg->code           = malloc(DEFAULT_OPCODE_CAPACITY * sizeof(Byte));
@@ -65,8 +88,10 @@ static void advance(Segment* seg){
 }
 
 static void consume(Segment* seg, TOKEN_TYPE type, const char* message){
+    printf("Looking at '%.*s' against %i\n", seg->ip->length, seg->ip->start, type);
     if(seg->ip->type == type)
     {
+        printf("matched %i with %i\n", seg->ip->type, type);
         advance(seg);
         return;
     }
@@ -115,6 +140,8 @@ static void binary(Segment* seg){
             Segment_writeByte(seg, OP_DIV); break;
         case TOKEN_STAR:
             Segment_writeByte(seg, OP_MUL); break;
+        case TOKEN_CARROT:
+            Segment_writeByte(seg, OP_POW); break;
         default: break;
     }
     return;
@@ -138,12 +165,14 @@ static void unary(Segment* seg){
 }
 
 static void number(Segment* seg){
-    char buffer[seg->ip[-1].length];
+    char buffer[seg->ip[-1].length + 1];
     memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length); 
     buffer[seg->ip[-1].length] = '\0';
+    //By default, constants are I32;
     //printf("Considering the constant number '%s'", buffer);
-    Value v = atoi(buffer);
-    int index = Segment_pushConstant(seg, v);
+    uint32_t v = atoi(buffer);
+    Value constantValue = {.type = VAL_I32, .read_as.I32 = v};
+    int index = Segment_pushConstant(seg, constantValue);
     Segment_writeBytes(seg, OP_CONSTANT, index);
     return;
 }
@@ -161,6 +190,7 @@ ParseRule Parse_Rules[] = {
     [TOKEN_PAREN_LEFT]  = {grouping,      NULL,          ORDER_NONE},
     [TOKEN_EOF]         = {NULL,          NULL,          ORDER_NONE},
     [TOKEN_SEMI]        = {NULL,          NULL,          ORDER_NONE},
+    [TOKEN_CARROT]      = {NULL,        binary,         ORDER_POWER},
 };
 
 static ParseRule getRule(TOKEN_TYPE type){
@@ -208,13 +238,27 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
     seg->ipIndex    = 0;
     advance(seg);
     expression(seg);
+    if(seg->ip->type != TOKEN_EOF){
+        advance(seg);
+        expression(seg);
+    }
     consume(seg, TOKEN_EOF, "Expected the end of the file.\n");
+    //Push a return
+    // Test with an unexpected type.
+    // Segment_writeByte(seg, OP_CONSTANT);
+    // Value tempValue = {.type = VAL_U32, .read_as.U32 = 12};
+    // int index_of_temp_value = Segment_pushConstant(seg, tempValue);
+    // Segment_writeByte(seg, index_of_temp_value);
+    // Segment_writeByte(seg, OP_SUB);
+    Segment_writeByte(seg, OP_RET);
+
+
     printf("Dumping opcode stack. %i codes\n", seg->codeCount);
 
     for(int i = 0; i < seg->codeCount; i++){
         printf("%04i %04i\n", i, seg->code[i]);
         if(seg->code[i] == OP_CONSTANT){
-            printf("->%i at constants[%i]\n", seg->constants[seg->code[i+1]], seg->code[i+1]);
+            printf("->%i at constants[%i]\n", seg->constants[seg->code[i+1]].read_as.I32, seg->code[i+1]);
             i++;
         }
     }

@@ -46,6 +46,11 @@ $(TARGET): $(OBJECTS)
 	@$(CC) -o $@ $^ $(LDLIBS)
 	.\BORK
 
+file: $(OBJECTS)
+	@$(CC) -o $@ $^ $(LDLIBS)
+	.\BORK .\Example\Bork.bark
+
+
 clean:
 	@rm -f $(TARGET) $(OBJECTS) $(DEPENDS)
 
