@@ -10,6 +10,7 @@
 typedef enum {
     //DATA
     OP_CONSTANT,
+    OP_DEF_I32,
     //LOG
     OP_NEG,
    //ARITH 
@@ -19,6 +20,7 @@ typedef enum {
     OP_DIV,
     OP_POW,
     //CORE
+    OP_POP,
     OP_BARK,
     OP_RET,
 } OpCode;
@@ -36,7 +38,8 @@ typedef struct {
     int         ipIndex;
     Token*      ip;
     int         maxIndex;
-    //SymbolTable localConstants;
+    
+    SymbolTable* symbols;
 } Segment;
 
 typedef enum {

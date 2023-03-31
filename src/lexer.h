@@ -8,6 +8,7 @@ typedef enum {
     //Primitives
     TOKEN_NUMBER,
     TOKEN_I32,
+    TOKEN_STRING,
     //ARITHMETIC
     TOKEN_PLUS,
     TOKEN_MINUS,
@@ -15,7 +16,7 @@ typedef enum {
     TOKEN_SLASH,
     TOKEN_CARROT,
     //VARIABLES
-    TOKEN_VAR,
+    TOKEN_ID,
     //Statements
     TOKEN_BARK,
     //Core

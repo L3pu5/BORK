@@ -8,9 +8,22 @@
 typedef enum{
     VAL_I32,
     VAL_U32,
-    VAL_CHAR,
-    VAL_OBJ_PTR,
+    VAL_OBJ,
 } VALUE_TYPE;
+
+typedef enum {
+    OBJ_STRING,
+} OBJECT_TYPE;
+
+typedef struct {
+    OBJECT_TYPE         type;
+} Object;
+
+typedef struct {
+    Object              object;
+    int                 length;
+    char*               string;
+} Object_String;
 
 typedef struct {
     VALUE_TYPE          type;
@@ -23,5 +36,6 @@ typedef struct {
 } Value;
 
 void value_to_string(Value value, char* buffer);
+void free_value(Value value);
 
 #endif

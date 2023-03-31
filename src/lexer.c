@@ -6,7 +6,7 @@
 
 #include "lexer.h"
 #include "common.h"
-//#include "debug.h"
+#include "debug.h"
 
 typedef struct {
     char*           current;
@@ -123,6 +123,14 @@ static void number(){
     return;
 }
 
+static void string(){
+    while(peek() != '"'){
+        advance();
+    }
+    TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_STRING));
+    return;
+}
+
 static bool match(char* input, char * challenge, int length){
     char buffer[length];
     memcpy(buffer, input, length);
@@ -150,11 +158,10 @@ static void identifier(){
             }
         }
         default:
-            advance();
             while(isAlpha(cursor())){
                 advance();
             }
-            TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_VAR));
+            TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous, TOKEN_ID));
             return;
     }
 
@@ -220,6 +227,9 @@ TokenStack* Lexer_parse() {
             case '\n':
                 lex.line++;
                 lex.char_offset = -1;
+                break;
+            case '"':
+                string();
                 break;
             case ';':
                 TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_SEMI));

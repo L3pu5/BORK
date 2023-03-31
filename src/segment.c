@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #include "segment.h"
-//#include "debug.h"
+#include "debug.h"
 #include "value.h"
 
 
@@ -29,6 +29,8 @@ const char* OpCode_Disassemble(OpCode op){
             return "BARK";
         case OP_RET:
             return "RET";
+        case OP_DEF_I32:
+            return "DEF_I32";
         default:
             printf("Unimplemented OpCode Disassemble\n");
             //exit(12);
@@ -45,12 +47,16 @@ void Segment_init(Segment* seg){
     seg->constantCount          = 0;
     seg->ip                     = NULL;
     seg->ipIndex                = 0;
+    seg->symbols                = calloc(1, sizeof(SymbolTable));
+    SymbolTable_init(seg->symbols);
     return;
 }
 
 void Segment_free(Segment* seg){
     free(seg->code);
     free(seg->constants);
+    SymbolTable_free(seg->symbols);
+    free(seg->symbols);
     return;
 }
 
@@ -96,7 +102,7 @@ static void consume(Segment* seg, TOKEN_TYPE type, const char* message){
         advance(seg);
         return;
     }
-    printf("%s", message);
+    printf("%s\n", message);
     return;
 }
 
@@ -111,7 +117,8 @@ static bool match(Segment* seg, TOKEN_TYPE type){
 static void expression(Segment* seg){
     //Go at the lowest level, we consume everything on the other side
     //of an :='ss
-    //printf("Current rule type %i\n", seg->ip->type);
+    printf("Current Token: %.*s\n", seg->ip->length, seg->ip->start);
+    printf("Current Token: %i\n",  seg->ip->type);
     parse(seg, ORDER_ASSIGNMENT);
     consume(seg, TOKEN_SEMI, "Expected ';' after an expression.");
     return;
@@ -120,10 +127,14 @@ static void expression(Segment* seg){
 
 static void grouping(Segment* seg){
     expression(seg);
-    consume(seg, TOKEN_PAREN_LEFT, "Expected ')' after expression.");
+    consume(seg, TOKEN_PAREN_LEFT, "Expected ')' after expression.;");
     return;
 }
 
+static void expressionStatement(Segment* seg){
+    expression(seg);
+    Segment_writeByte(seg, OP_POP);
+}
 
 static void statement(Segment* seg){
     if( match(seg, TOKEN_BARK)){
@@ -131,12 +142,45 @@ static void statement(Segment* seg){
             Segment_writeByte(seg, OP_BARK);
     }
     else{
+        expressionStatement(seg);
+    }
+}
+
+static void i32_declaration(Segment* seg){
+    if(seg->ip[-1].type == TOKEN_ID){
+        Token label = seg->ip[-1];
+        //advance(seg);
+        consume(seg, TOKEN_COLON, "Expected ':' after identifier.");
+        advance(seg);
+        printf("%.*s", seg->ip->length, seg->ip->start);
         expression(seg);
+
+        //Write it to the symbol table
+        //printf("LENGTH OF LABEL: %i\n", label.length);
+        Symbol identifier = { .type = SYMBOL_VALUE};
+        memcpy(identifier.name, label.start, label.length);
+        identifier.name[label.length] = '\0';
+        //printf("IDENTIFIER: %s, %i\n", identifier.name, identifier.type);
+        uint8_t symbolTableIndex = SymbolTable_push(seg->symbols, identifier);
+        //seg->symbols->entries[0].name = "TEST";
+
+        //printf("TESTING SYMBOL %s = %s\n", identifier.name, seg->symbols->entries[symbolTableIndex].name);
+        //printf("INDEX IS AT %i", symbolTableIndex);
+        Segment_writeBytes(seg, OP_DEF_I32, symbolTableIndex);
+        //SymbolTable_dump(seg->symbols);
+        return;
+    }else{
+        printf("Expected '<id>' after i32");
     }
 }
 
 static void declaration(Segment* seg){
-    statement(seg);
+    if(match(seg, TOKEN_I32)){
+        i32_declaration(seg);
+    }
+    else{
+        statement(seg);
+    }
 }
 
 
@@ -185,6 +229,7 @@ static void unary(Segment* seg){
 }
 
 static void number(Segment* seg){
+    printf("NUMBER");
     char buffer[seg->ip[-1].length + 1];
     memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length); 
     buffer[seg->ip[-1].length] = '\0';
@@ -196,6 +241,21 @@ static void number(Segment* seg){
     Segment_writeBytes(seg, OP_CONSTANT, index);
     return;
 }
+
+// static void string(Segment* seg){
+//     //Create the string
+//     char* buffer = malloc(seg->ip[-1].length + 1* sizeof(char));
+//     memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length); 
+//     buffer[seg->ip[-1].length] = '\0';
+//     //Dump the string pointer into a new value
+//     Object_String* string = malloc(sizeof(Object_String));
+//     string->string = buffer;
+
+//     Value constantValue = {.type = VAL_OBJ, .read_as.OBJ_PTR = string};
+//     int index = Segment_pushConstant(seg, constantValue);
+//     Segment_writeBytes(seg, OP_CONSTANT, index);
+//     return;    
+// }
 
 // Parsing logic definition
 // {PREFIX, INDFIX, ORDER}
@@ -258,11 +318,11 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
     seg->ipIndex    = 0;
     advance(seg);
     declaration(seg);
-    if(seg->ip->type != TOKEN_EOF){
-        advance(seg);
-        declaration(seg);
+    while(seg->ip->type != TOKEN_EOF){
+         advance(seg);
+         declaration(seg);
     }
-    consume(seg, TOKEN_EOF, "Expected the end of the file.\n");
+    consume(seg, TOKEN_EOF, "Expected the end of the file.");
     //Push a return
     // Test with an unexpected type.
     // Segment_writeByte(seg, OP_CONSTANT);
@@ -278,13 +338,15 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
 
     for(int i = 0; i < seg->codeCount; i++){
         printf("%04i %04i\n", i, seg->code[i]);
-        if(seg->code[i] == OP_CONSTANT){
-            printf("->%i at constants[%i]\n", seg->constants[seg->code[i+1]].read_as.I32, seg->code[i+1]);
-            i++;
-        }
+        // if(seg->code[i] == OP_CONSTANT){
+        //     printf("->%i at constants[%i]\n", seg->constants[seg->code[i+1]].read_as.I32, seg->code[i+1]);
+        //     i++;
+        // }
     }
     if(seg->ip->type == TOKEN_EOF){
         printf("Finished reading the stack\n");
     }
     #endif
+    //printf("DUMPING SYMBOLTABLE AT END OF COMPILE\n");
+    //SymbolTable_dump(seg->symbols);
 }
