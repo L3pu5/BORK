@@ -6,7 +6,7 @@
 
 #include "lexer.h"
 #include "common.h"
-#include "debug.h"
+//#include "debug.h"
 
 typedef struct {
     char*           current;
@@ -141,6 +141,13 @@ static void identifier(){
                 return;
             }
             break;
+        }
+        case 'b':{
+            if (match(lex.previous, "bark", 4) && !isAlphaNumeric(peek_n(4))){
+                advance_n(4);
+                TokenStack_push(lex.currentStack, makeToken(lex.previous, 4, TOKEN_BARK));
+                return;
+            }
         }
         default:
             advance();

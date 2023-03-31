@@ -1,27 +1,27 @@
-// #ifndef BORK_SYMBOL
-// #define BORK_SYMBOL
+#ifndef BORK_SYMBOL
+#define BORK_SYMBOL
 
-// #include "common.h"
+#include "common.h"
 
-// typedef enum {
-//     VALUE,
-//     
-// } SYMBOL_TYPE;
+typedef enum {
+    VALUE,
+    
+} SYMBOL_TYPE;
 
-// typedef struct {
-//     char*           name;
-//     SYMBOL_TYPE     type;
-//     void*           data;
-// } Symbol;
+typedef struct {
+    char*           name;
+    SYMBOL_TYPE     type;
+    void*           data;
+} Symbol;
 
-// typedef struct {
-//     int         capacity;
-//     int         count;
-//     Symbol*     entries;
-// } SymbolTable;
+typedef struct {
+    int         capacity;
+    int         count;
+    Symbol*     entries;
+} SymbolTable;
 
-// void SymbolTable_init   (SymbolTable* tbl);
-// int SymbolTable_push    (SymbolTable* tbl, Symbol symbol);
-// Symbol* SymbolTable_get    (SymbolTable* tbl, int index);
+void SymbolTable_init   (SymbolTable* tbl);
+int SymbolTable_push    (SymbolTable* tbl, Symbol symbol);
+Symbol* SymbolTable_get    (SymbolTable* tbl, int index);
 
-// #endif 
+#endif 

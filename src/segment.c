@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "segment.h"
-#include "debug.h"
+//#include "debug.h"
 #include "value.h"
 
 
@@ -24,6 +25,8 @@ const char* OpCode_Disassemble(OpCode op){
             return "DIV";
         case OP_CONSTANT:
             return "CNST";
+        case OP_BARK:
+            return "BARK";
         case OP_RET:
             return "RET";
         default:
@@ -78,8 +81,6 @@ int Segment_pushConstant(Segment* seg, Value constant){
     return seg->constantCount -1;
 }
 
-
-
 static void advance(Segment* seg){
     seg->ip++;
     seg->ipIndex++;
@@ -88,15 +89,23 @@ static void advance(Segment* seg){
 }
 
 static void consume(Segment* seg, TOKEN_TYPE type, const char* message){
-    printf("Looking at '%.*s' against %i\n", seg->ip->length, seg->ip->start, type);
+    //printf("Looking at '%.*s' against %i\n", seg->ip->length, seg->ip->start, type);
     if(seg->ip->type == type)
     {
-        printf("matched %i with %i\n", seg->ip->type, type);
+    //    printf("matched %i with %i\n", seg->ip->type, type);
         advance(seg);
         return;
     }
     printf("%s", message);
     return;
+}
+
+static bool match(Segment* seg, TOKEN_TYPE type){
+    if(seg->ip[-1].type == type){
+        advance(seg);
+        return true;
+    }
+    return false;
 }
 
 static void expression(Segment* seg){
@@ -116,9 +125,20 @@ static void grouping(Segment* seg){
 }
 
 
-// static void declaration(Segment* seg){
-//     return;
-// }
+static void statement(Segment* seg){
+    if( match(seg, TOKEN_BARK)){
+            expression(seg);
+            Segment_writeByte(seg, OP_BARK);
+    }
+    else{
+        expression(seg);
+    }
+}
+
+static void declaration(Segment* seg){
+    statement(seg);
+}
+
 
 
 static void binary(Segment* seg){
@@ -237,10 +257,10 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
     seg->ip         = tStack->tokens;
     seg->ipIndex    = 0;
     advance(seg);
-    expression(seg);
+    declaration(seg);
     if(seg->ip->type != TOKEN_EOF){
         advance(seg);
-        expression(seg);
+        declaration(seg);
     }
     consume(seg, TOKEN_EOF, "Expected the end of the file.\n");
     //Push a return
@@ -252,6 +272,7 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
     // Segment_writeByte(seg, OP_SUB);
     Segment_writeByte(seg, OP_RET);
 
+    #ifdef BORK_COMPILE_TRACE
 
     printf("Dumping opcode stack. %i codes\n", seg->codeCount);
 
@@ -265,4 +286,5 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
     if(seg->ip->type == TOKEN_EOF){
         printf("Finished reading the stack\n");
     }
+    #endif
 }

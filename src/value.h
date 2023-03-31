@@ -22,4 +22,6 @@ typedef struct {
     } read_as;
 } Value;
 
+void value_to_string(Value value, char* buffer);
+
 #endif

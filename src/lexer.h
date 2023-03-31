@@ -16,10 +16,11 @@ typedef enum {
     TOKEN_CARROT,
     //VARIABLES
     TOKEN_VAR,
+    //Statements
+    TOKEN_BARK,
     //Core
     TOKEN_COLON,
     TOKEN_SEMI,
-    TOKEN_BARK,
     TOKEN_EOF,
 } TOKEN_TYPE;
 

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "lexer.h"
-#include "debug.h"
+//#include "debug.h"
 #include "segment.h"
 #include "vm.h"
 
@@ -26,7 +26,7 @@ static TokenStack* ParseCode(char* code){
     Lexer_init(code);
     TokenStack* tokens = Lexer_parse();
     #ifdef BORK_PARSER_TRACE
-    printf("-------------------\n");
+    printf("-------------------\n");1
     printf("Count of tokens in tokenStack: %i\n", tokens->count);
     for (size_t i = 0; i < tokens->count; i++)
     {

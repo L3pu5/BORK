@@ -9,7 +9,7 @@ VM vm;
 void VM_init(){
     vm.ip = NULL;
     vm.stackPtr = vm.stack;
-    printf("Initialised VM\n");
+    //printf("Initialised VM\n");
 }
 
 // static void advance(){
@@ -52,6 +52,12 @@ static void add(){
             printf("Unimplemented operation.");
             return;
     }
+}
+
+static void bark(){
+    char buffer[256];
+    value_to_string(pop(), buffer);
+    printf("%s\n", buffer);
 }
 
 static void sub(){
@@ -124,6 +130,7 @@ static void ret(){
 }
 
 void VM_walkStack(){
+    #ifdef BORK_VM_TRACE
     printf("Beginning stackwalk\n");
     printf("----------------\n");
     Value* walker = vm.stack;
@@ -132,6 +139,7 @@ void VM_walkStack(){
         walker++;
     }
     printf("----------------\n");
+    #endif
 }
 
 void VM_execute(Segment* seg){
@@ -141,8 +149,9 @@ void VM_execute(Segment* seg){
     //OpCode code = *vm.ip;
     for (;;){
         OpCode code = NEXT_BYTE();
+        #ifdef BORK_VM_TRACE
         printf("VM -> %i\n", code);
-        
+        #endif
         //Execute the instruction of the OpCode
         switch(code){
             case OP_CONSTANT:
@@ -163,6 +172,9 @@ void VM_execute(Segment* seg){
             case OP_POW:
                 power();
                 break;
+            case OP_BARK:
+                bark();
+                break;
             case OP_RET:
                 //For now we will just print the stack
                 ret();
@@ -174,8 +186,10 @@ void VM_execute(Segment* seg){
                 return;
         }
 
+        #ifdef BORK_VM_TRACE
         printf("VM : Instruction %04i\n", code);
         printf("   | Instruction %s\n", OpCode_Disassemble(code));
+        #endif
         //advance();
     }
 }
