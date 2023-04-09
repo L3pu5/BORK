@@ -39,12 +39,19 @@ uint8_t SymbolTable_push(SymbolTable* tbl, Symbol s){
     //Find an empty spot.
     for (uint8_t i = 0; i < tbl->capacity; i++)
     {
+       // printf("Attempting to index Symboltable at %d\n", i);
+       // printf("Entries located at %p\n", tbl->entries);
+       // printf("Ptr of i: -> %p\n", &tbl->entries[i]);
+       // printf("TYPE: %d, comparing against %d", tbl->entries[i].type, SYMBOL_TOMBSTONE);
+        //exit(69);
         if(tbl->entries[i].type == SYMBOL_TOMBSTONE){
+           // printf("HERE!!!!");
             tbl->entries[i] = s;
             tbl->entries[i].value = s.value;
-
+            //printf("Exiting push");
             return i;
         }
+
     }
     return -1;
 }

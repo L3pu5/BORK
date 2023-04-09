@@ -273,6 +273,8 @@ static void identifier(Segment* seg){
     uint8_t index = SymbolTable_get_index_of(seg->symbols, buffer); 
     if(index != -1){
         Segment_writeBytes(seg, OP_ID, index);
+    }else{
+        printf("Undeclared identifier '%.*s'.", seg->ip[-1].length, seg->ip[-1].start);
     }
 }
 

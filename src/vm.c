@@ -179,7 +179,7 @@ static void global_I32(Segment* seg){
     //printf("GOT %s, %i TYPE\n", s.name, s.type);
     SymbolTable_push(vm.globals, s);
 
-    printf("ALLOCATED GLOBAL %s - Value %i", vm.globals->entries[vm.globals->count-1].name, SymbolTable_get(vm.globals, "x")->value->read_as.I32);
+//    printf("ALLOCATED GLOBAL %.*s - Value %i", SymbolTable_get(vm.globals, "x").nameLength, SymbolTable_get(vm.globals, "x")->.name, SymbolTable_get(vm.globals, "x")->value->read_as.I32);
 }
 
 void VM_execute(Segment* seg){
