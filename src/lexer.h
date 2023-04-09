@@ -3,6 +3,8 @@
 
 typedef enum {
     //GROUPING
+    TOKEN_BRACE_LEFT,
+    TOKEN_BRACE_RIGHT,
     TOKEN_PAREN_LEFT,
     TOKEN_PAREN_RIGHT,
     //Primitives

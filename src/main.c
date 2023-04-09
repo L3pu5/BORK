@@ -43,6 +43,7 @@ static void Compile_and_execute_Segment(TokenStack* tokens){
     Segment_compile(&s, tokens);
     VM_init();
     VM_execute(&s);
+    //printf("Execute complete.");
 }
 
 static char* readCode(const char* path){
@@ -63,7 +64,7 @@ static void doFile(const char* path){
     TokenStack* tokens = ParseCode(code);
     Compile_and_execute_Segment(tokens);
     TokenStack_free(tokens);
-    free(code);
+    //free(code);
     return;
 }
 

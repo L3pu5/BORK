@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "math.h"
 #include "vm.h"
@@ -134,7 +135,7 @@ static void power(){
 }
 
 static void ret(){
-    VM_walkStack();
+    printf("RETURN\n");
     return;
 }
 
@@ -151,9 +152,14 @@ void VM_walkStack(){
     #endif
 }
 
-// static void push_var(Segment *seg){
-//     //Symbol s = SymbolTable_get()
-// }
+static void push_var(Segment *seg){
+    printf("PUSHING VAR\n");
+    uint8_t localIndex = NEXT_BYTE();
+    printf("%i", localIndex);
+    Symbol s = SymbolTable_get_by_index(vm.globals, localIndex);
+    printf("NAME OF SYMBOL S: %s, Value %i", s.name, s.value->read_as.I32);
+    push(*(s.value));
+}
 
 //Assignment
 static void global_I32(Segment* seg){
@@ -163,14 +169,16 @@ static void global_I32(Segment* seg){
     uint8_t localIndex = NEXT_BYTE();
     //printf("INDEX %i - %s\n", localIndex, SymbolTable_get_by_index(seg->symbols, 0).name);
     Value v = pop();
-    printf("READING %i\n", v.read_as.I32);
-    Value *vDest = calloc(1, sizeof(Value));
-    vDest->type = v.type;
-    vDest->read_as.I32 = v.read_as.I32;
+    Value* v_value = calloc(1, sizeof(Value));
+    memcpy(v_value, &v, sizeof(Value));
+    printf("Memcpy in place");
+    printf("READING %i\n", v_value->read_as.I32);
     Symbol s = SymbolTable_get_by_index(seg->symbols, localIndex);
-    s.value = vDest;
+    s.value = v_value;
+    printf("VALUE POINTER ON ASSIGN: %i\n", s.value->read_as.I32);
     //printf("GOT %s, %i TYPE\n", s.name, s.type);
     SymbolTable_push(vm.globals, s);
+
     printf("ALLOCATED GLOBAL %s - Value %i", vm.globals->entries[vm.globals->count-1].name, SymbolTable_get(vm.globals, "x")->value->read_as.I32);
 }
 
@@ -208,6 +216,9 @@ void VM_execute(Segment* seg){
                 break;
             case OP_DEF_I32:
                 global_I32(seg);
+                break;
+            case OP_ID:
+                push_var(seg);
                 break;
             case OP_POP:
                 pop();

@@ -12,6 +12,7 @@
 ParseRule Parse_Rules[];
 static void parse(Segment* seg, Order order);
 static ParseRule getRule(TOKEN_TYPE type);
+static void declaration(Segment* seg);
 
 const char* OpCode_Disassemble(OpCode op){
     switch(op){
@@ -31,6 +32,8 @@ const char* OpCode_Disassemble(OpCode op){
             return "RET";
         case OP_DEF_I32:
             return "DEF_I32";
+        case OP_POP:
+            return "POP";
         default:
             printf("Unimplemented OpCode Disassemble\n");
             //exit(12);
@@ -47,6 +50,7 @@ void Segment_init(Segment* seg){
     seg->constantCount          = 0;
     seg->ip                     = NULL;
     seg->ipIndex                = 0;
+    seg->depth                  = 0;
     seg->symbols                = calloc(1, sizeof(SymbolTable));
     SymbolTable_init(seg->symbols);
     return;
@@ -118,7 +122,7 @@ static void expression(Segment* seg){
     //Go at the lowest level, we consume everything on the other side
     //of an :='ss
     printf("Current Token: %.*s\n", seg->ip->length, seg->ip->start);
-    printf("Current Token: %i\n",  seg->ip->type);
+    //printf("Current Token: %i\n",  seg->ip->type);
     parse(seg, ORDER_ASSIGNMENT);
     consume(seg, TOKEN_SEMI, "Expected ';' after an expression.");
     return;
@@ -131,6 +135,21 @@ static void grouping(Segment* seg){
     return;
 }
 
+static void endBlock(Segment* seg){
+    if(seg->depth >= 1)
+        seg->depth--;
+    return;
+}
+
+static void block(Segment* seg){
+    seg->depth++;
+    advance(seg);
+    declaration(seg);
+    endBlock(seg);
+    consume(seg, TOKEN_BRACE_RIGHT, "Expected '}' after block.");
+    return;
+}
+
 static void expressionStatement(Segment* seg){
     expression(seg);
     Segment_writeByte(seg, OP_POP);
@@ -138,8 +157,8 @@ static void expressionStatement(Segment* seg){
 
 static void statement(Segment* seg){
     if( match(seg, TOKEN_BARK)){
-            expression(seg);
-            Segment_writeByte(seg, OP_BARK);
+        expression(seg);
+        Segment_writeByte(seg, OP_BARK);
     }
     else{
         expressionStatement(seg);
@@ -177,6 +196,9 @@ static void i32_declaration(Segment* seg){
 static void declaration(Segment* seg){
     if(match(seg, TOKEN_I32)){
         i32_declaration(seg);
+    }
+    else if (match(seg, TOKEN_BRACE_LEFT)){
+        block(seg);
     }
     else{
         statement(seg);
@@ -229,7 +251,6 @@ static void unary(Segment* seg){
 }
 
 static void number(Segment* seg){
-    printf("NUMBER");
     char buffer[seg->ip[-1].length + 1];
     memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length); 
     buffer[seg->ip[-1].length] = '\0';
@@ -240,6 +261,19 @@ static void number(Segment* seg){
     int index = Segment_pushConstant(seg, constantValue);
     Segment_writeBytes(seg, OP_CONSTANT, index);
     return;
+}
+
+static void identifier(Segment* seg){
+    //Get the symbol table, insert here.
+    char buffer[100];
+    printf("IDENTIFIER TOKEN '%.*s'\n", seg->ip[-1].length, seg->ip[-1].start);
+    memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length);
+    buffer[seg->ip[-1].length] = '\0';
+    printf("Seeking %s\n", buffer);
+    uint8_t index = SymbolTable_get_index_of(seg->symbols, buffer); 
+    if(index != -1){
+        Segment_writeBytes(seg, OP_ID, index);
+    }
 }
 
 // static void string(Segment* seg){
@@ -271,6 +305,7 @@ ParseRule Parse_Rules[] = {
     [TOKEN_EOF]         = {NULL,          NULL,          ORDER_NONE},
     [TOKEN_SEMI]        = {NULL,          NULL,          ORDER_NONE},
     [TOKEN_CARROT]      = {NULL,        binary,         ORDER_POWER},
+    [TOKEN_ID]          = {identifier,   NULL,              ORDER_NONE},
 };
 
 static ParseRule getRule(TOKEN_TYPE type){
@@ -303,7 +338,7 @@ static void parse(Segment* seg, Order order){
    
     
     while( order <= getRule(seg->ip->type).order){
-        //printf("Considering infix operation on token '%.*s'", seg->ip->length, seg->ip->start);
+        printf("Considering infix operation on token '%.*s'", seg->ip->length, seg->ip->start);
         //Text the next rule;
         advance(seg);
         void* infixOperation = getRule(seg->ip[-1].type).infixOperation;

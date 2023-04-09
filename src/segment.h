@@ -11,6 +11,7 @@ typedef enum {
     //DATA
     OP_CONSTANT,
     OP_DEF_I32,
+    OP_ID,
     //LOG
     OP_NEG,
    //ARITH 
@@ -27,19 +28,20 @@ typedef enum {
 
 //A segment of compiled code
 typedef struct {
-    Byte*       code;
-    int         codeCapacity;
-    int         codeCount;
+    Byte*           code;
+    int             codeCapacity;
+    int             codeCount;
+        
+    Value*          constants;
+    int             constantCapacity;
+    int             constantCount;
     
-    Value*      constants;
-    int         constantCapacity;
-    int         constantCount;
-
-    int         ipIndex;
-    Token*      ip;
-    int         maxIndex;
+    int             ipIndex;
+    Token*          ip;
+    int             maxIndex;
     
-    SymbolTable* symbols;
+    SymbolTable*    symbols;
+    uint8_t         depth;
 } Segment;
 
 typedef enum {

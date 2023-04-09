@@ -120,6 +120,7 @@ static void number(){
     }
     //Create a new number token
     TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_NUMBER));
+    printf("CONSIDERING CHAR AFTER NUMBER'%c'\n", *lex.current);
     return;
 }
 
@@ -168,8 +169,9 @@ static void identifier(){
 }
 
 static void skipWhiteSpace(){
-    while(cursor() == ' ' || cursor() == '\t'){
+    while(cursor() == ' ' || cursor() == '\t' || cursor() == '\r'){
         advance();
+        printf("SKIPPING\n");
     }
 }
 
@@ -187,17 +189,6 @@ TokenStack* Lexer_parse() {
         skipWhiteSpace();
         // We set the previous character to the current one
         lex.previous = lex.current;
-        //Is this a number?
-        if( isNumber(cursor())){
-            number();
-            advance();
-            continue;        
-        }
-
-        if (isAlpha(cursor())){
-            identifier();
-            continue;
-        }
 
         switch(cursor()){
             case '(':
@@ -223,7 +214,13 @@ TokenStack* Lexer_parse() {
                 break;
             case ':':
                 TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_COLON));
-                break;            
+                break;
+            case '{':
+                TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_BRACE_LEFT));
+                break;
+            case '}':       
+                TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_BRACE_RIGHT));
+                break;     
             case '\n':
                 lex.line++;
                 lex.char_offset = -1;
@@ -234,7 +231,20 @@ TokenStack* Lexer_parse() {
             case ';':
                 TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_SEMI));
                 break;
+            case '\0':
+                TokenStack_push(lex.currentStack, makeToken(lex.current, 1, TOKEN_EOF));
+                return lex.currentStack;
             default:
+                //Is this a number?
+                if( isNumber(cursor())){
+                    number();
+                    break;        
+                }
+
+                if (isAlpha(cursor())){
+                    identifier();
+                    break;
+                }
                 printf("Unexpected character at <%i:%i> '%c'\n", lex.line, lex.char_offset, *lex.current);
                 exit(42069420);
                 break;

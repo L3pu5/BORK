@@ -29,5 +29,7 @@ Symbol* SymbolTable_get    (SymbolTable* tbl, char* name);
 void SymbolTable_free   (SymbolTable* tbl);
 Symbol SymbolTable_get_by_index (SymbolTable* tbl, uint8_t index);
 void SymbolTable_dump   (SymbolTable* tbl);
+uint8_t SymbolTable_get_index_of(SymbolTable* tbl, char* name);
+
 
 #endif 
