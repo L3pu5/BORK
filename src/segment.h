@@ -11,6 +11,7 @@ typedef enum {
     //DATA
     OP_CONSTANT,
     OP_DEF_I32,
+    OP_DEF_SVAR,
     OP_ID,
     //LOG
     OP_NEG,

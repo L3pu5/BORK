@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #include "segment.h"
-#include "debug.h"
+//#include "debug.h"
 #include "value.h"
 
 
@@ -34,6 +34,10 @@ const char* OpCode_Disassemble(OpCode op){
             return "DEF_I32";
         case OP_POP:
             return "POP";
+        case OP_ID:
+            return "IDENTIFIED VARIABLE";
+        case OP_DEF_SVAR:
+            return "DEF_SVAR";
         default:
             printf("Unimplemented OpCode Disassemble\n");
             //exit(12);
@@ -94,19 +98,17 @@ int Segment_pushConstant(Segment* seg, Value constant){
 static void advance(Segment* seg){
     seg->ip++;
     seg->ipIndex++;
-    //printf("Advanced pointer to index %i\nWe are looking at %i\n '%.*s'", seg->ipIndex, seg->ip->type, seg->ip->length, seg->ip->start);
     return;
 }
 
 static void consume(Segment* seg, TOKEN_TYPE type, const char* message){
-    //printf("Looking at '%.*s' against %i\n", seg->ip->length, seg->ip->start, type);
     if(seg->ip->type == type)
     {
-    //    printf("matched %i with %i\n", seg->ip->type, type);
         advance(seg);
         return;
     }
     printf("%s\n", message);
+    printf("Instead found token '%.*s'\n", seg->ip->length, seg->ip->start);
     return;
 }
 
@@ -119,11 +121,8 @@ static bool match(Segment* seg, TOKEN_TYPE type){
 }
 
 static void expression(Segment* seg){
-    //Go at the lowest level, we consume everything on the other side
-    //of an :='ss
-    printf("Current Token: %.*s\n", seg->ip->length, seg->ip->start);
-    //printf("Current Token: %i\n",  seg->ip->type);
     parse(seg, ORDER_ASSIGNMENT);
+    //advance(seg);
     consume(seg, TOKEN_SEMI, "Expected ';' after an expression.");
     return;
 }
@@ -165,13 +164,42 @@ static void statement(Segment* seg){
     }
 }
 
-static void i32_declaration(Segment* seg){
+static void svar_declaration(Segment* seg){
     if(seg->ip[-1].type == TOKEN_ID){
         Token label = seg->ip[-1];
         //advance(seg);
         consume(seg, TOKEN_COLON, "Expected ':' after identifier.");
         advance(seg);
-        printf("%.*s", seg->ip->length, seg->ip->start);
+        //printf("%.*s", seg->ip->length, seg->ip->start);
+        expression(seg);
+
+        //Write it to the symbol table
+        //printf("LENGTH OF LABEL: %i\n", label.length);
+        Symbol identifier = { .type = SYMBOL_VALUE};
+        memcpy(identifier.name, label.start, label.length);
+        identifier.name[label.length] = '\0';
+        //printf("IDENTIFIER: %s, %i\n", identifier.name, identifier.type);
+        uint8_t symbolTableIndex = SymbolTable_push(seg->symbols, identifier);
+        //seg->symbols->entries[0].name = "TEST";
+
+        //printf("TESTING SYMBOL %s = %s\n", identifier.name, seg->symbols->entries[symbolTableIndex].name);
+        //printf("INDEX IS AT %i", symbolTableIndex);
+        Segment_writeBytes(seg, OP_DEF_SVAR, symbolTableIndex);
+        //SymbolTable_dump(seg->symbols);
+        return;
+    }else{
+        printf("Expected '<id>' after string");
+    }
+}
+
+static void i32_declaration(Segment* seg){
+    if(seg->ip[-1].type == TOKEN_ID){
+        Token label = seg->ip[-1];
+        
+        //advance(seg);
+        consume(seg, TOKEN_COLON, "Expected ':' after identifier.");
+        advance(seg);
+        //printf("%.*s", seg->ip->length, seg->ip->start);
         expression(seg);
 
         //Write it to the symbol table
@@ -196,6 +224,9 @@ static void i32_declaration(Segment* seg){
 static void declaration(Segment* seg){
     if(match(seg, TOKEN_I32)){
         i32_declaration(seg);
+    }
+    else if (match(seg, TOKEN_SVAR)){
+        svar_declaration(seg);
     }
     else if (match(seg, TOKEN_BRACE_LEFT)){
         block(seg);
@@ -236,6 +267,7 @@ static void binary(Segment* seg){
 static void unary(Segment* seg){
     //Grab the type of unary operator
     TOKEN_TYPE operator = seg->ip[-1].type;
+    printf("Unary\n");
     //Compile everything AFTER the operator
     expression(seg); //we can have -(ax + b)
 
@@ -249,6 +281,24 @@ static void unary(Segment* seg){
     }
     return;
 }
+
+static void string(Segment* seg){
+    //printf("Calling string\n");
+    char buffer[seg->ip[-1].length + -2];
+    //printf("???\n");
+    memcpy(buffer, seg->ip[-1].start +1, seg->ip[-1].length -2); 
+    //buffer[seg->ip[-1].length];
+    //Allocate all strings on the heap.
+    //uint32_t v = atoi(buffer);
+    //printf("Allocating string object.\n");
+    Object* objPtr = Object_create_string(buffer, seg->ip[-1].length -2);
+    Value constantValue = {.type = VAL_STR, .read_as.OBJ_PTR = objPtr};
+    int index = Segment_pushConstant(seg, constantValue);
+    Segment_writeBytes(seg, OP_CONSTANT, index);
+    //advance(seg);
+    return;
+}
+
 
 static void number(Segment* seg){
     char buffer[seg->ip[-1].length + 1];
@@ -266,16 +316,18 @@ static void number(Segment* seg){
 static void identifier(Segment* seg){
     //Get the symbol table, insert here.
     char buffer[100];
-    printf("IDENTIFIER TOKEN '%.*s'\n", seg->ip[-1].length, seg->ip[-1].start);
+    //printf("IDENTIFIER TOKEN '%.*s'\n", seg->ip[-1].length, seg->ip[-1].start);
     memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length);
     buffer[seg->ip[-1].length] = '\0';
-    printf("Seeking %s\n", buffer);
+    //printf("Seeking %s\n", buffer);
     uint8_t index = SymbolTable_get_index_of(seg->symbols, buffer); 
     if(index != -1){
         Segment_writeBytes(seg, OP_ID, index);
+        printf("ACCESSING INDEX %i\n", index);
     }else{
         printf("Undeclared identifier '%.*s'.", seg->ip[-1].length, seg->ip[-1].start);
     }
+    //advance(seg);
 }
 
 // static void string(Segment* seg){
@@ -308,6 +360,7 @@ ParseRule Parse_Rules[] = {
     [TOKEN_SEMI]        = {NULL,          NULL,          ORDER_NONE},
     [TOKEN_CARROT]      = {NULL,        binary,         ORDER_POWER},
     [TOKEN_ID]          = {identifier,   NULL,              ORDER_NONE},
+    [TOKEN_STRING]      = {string,       NULL,              ORDER_NONE},
 };
 
 static ParseRule getRule(TOKEN_TYPE type){
@@ -320,6 +373,7 @@ static ParseRule getRule(TOKEN_TYPE type){
 static void parse(Segment* seg, Order order){
     //Get our rules.
     ParseRule currentRule = getRule(seg->ip[-1].type);
+    //printf("Cursor rule %.*s\n", seg->ip->length, seg->ip->start);
     //Are we a prefix operator?
     void *prefixOperation = currentRule.prefixOperation;
 
@@ -328,7 +382,7 @@ static void parse(Segment* seg, Order order){
         //We should always start on a prefix operator
         //Whether that be a number, a variable, or a declaration
         #ifdef BORK_COMPILE_TRACE
-        //printf("Expected prefix token, found %i", seg->ip[-1].type);
+            printf("Expected prefix token, found %i", seg->ip[-1].type);
         #endif
         return;
     }
@@ -340,7 +394,7 @@ static void parse(Segment* seg, Order order){
    
     
     while( order <= getRule(seg->ip->type).order){
-        printf("Considering infix operation on token '%.*s'", seg->ip->length, seg->ip->start);
+       // printf("Considering infix operation on token '%.*s'", seg->ip->length, seg->ip->start);
         //Text the next rule;
         advance(seg);
         void* infixOperation = getRule(seg->ip[-1].type).infixOperation;
@@ -360,13 +414,6 @@ void Segment_compile(Segment* seg, TokenStack* tStack){
          declaration(seg);
     }
     consume(seg, TOKEN_EOF, "Expected the end of the file.");
-    //Push a return
-    // Test with an unexpected type.
-    // Segment_writeByte(seg, OP_CONSTANT);
-    // Value tempValue = {.type = VAL_U32, .read_as.U32 = 12};
-    // int index_of_temp_value = Segment_pushConstant(seg, tempValue);
-    // Segment_writeByte(seg, index_of_temp_value);
-    // Segment_writeByte(seg, OP_SUB);
     Segment_writeByte(seg, OP_RET);
 
     #ifdef BORK_COMPILE_TRACE

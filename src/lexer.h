@@ -10,6 +10,7 @@ typedef enum {
     //Primitives
     TOKEN_NUMBER,
     TOKEN_I32,
+    TOKEN_SVAR,
     TOKEN_STRING,
     //ARITHMETIC
     TOKEN_PLUS,

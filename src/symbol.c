@@ -76,7 +76,7 @@ uint8_t SymbolTable_get_index_of(SymbolTable* tbl, char* name){
         if(tbl->entries[i].type != SYMBOL_TOMBSTONE){
             if(strlen(tbl->entries[i].name) == strlen(name)){
                 if(strcmp(tbl->entries[i].name, name) == 0){
-                    printf("INDEX_OF: %lli\n", i);
+                    //printf("INDEX_OF: %lli\n", i);
                     return i;
                 }
             }
@@ -90,7 +90,7 @@ void SymbolTable_free(SymbolTable* tbl){
     for (size_t i = 0; i < tbl->capacity; i++)
     {
         if(tbl->entries[i].type != SYMBOL_TOMBSTONE){
-            free_value(*tbl->entries[i].value);
+            value_free(*tbl->entries[i].value);
         }
     }  
 }

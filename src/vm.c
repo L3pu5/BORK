@@ -5,7 +5,7 @@
 #include "math.h"
 #include "vm.h"
 #include "common.h"
-#include "debug.h"
+//#include "debug.h"
 
 
 VM vm;
@@ -65,8 +65,13 @@ static void add(){
 
 static void bark(){
     char buffer[256];
-    value_to_string(pop(), buffer);
-    printf("%s\n", buffer);
+    Value intermediateValue = pop();
+    value_to_string(intermediateValue, buffer);
+    if(intermediateValue.type == VAL_STR){
+        printf("%.*s\n", ((Object_String*) intermediateValue.read_as.OBJ_PTR)->length, buffer);
+    }else{
+        printf("%s\n", buffer);
+    }
 }
 
 static void sub(){
@@ -76,7 +81,7 @@ static void sub(){
         case VAL_I32:
             int32_t v1_i32 = v1.read_as.I32;
             int32_t v2_i32 = v2.read_as.I32;
-            Value output = {.type = VAL_I32, .read_as.I32 = (v2_i32 - v1_i32)};
+            Value output = {.type = VAL_I32, .read_as.I32 = (v1_i32 - v2_i32)};
             push(output);
             break;
         default:
@@ -135,7 +140,7 @@ static void power(){
 }
 
 static void ret(){
-    printf("RETURN\n");
+    //printf("RETURN\n");
     return;
 }
 
@@ -153,29 +158,49 @@ void VM_walkStack(){
 }
 
 static void push_var(Segment *seg){
-    printf("PUSHING VAR\n");
+    //printf("PUSHING VAR\n");
     uint8_t localIndex = NEXT_BYTE();
-    printf("%i", localIndex);
+    //printf("%i\n", localIndex);
     Symbol s = SymbolTable_get_by_index(vm.globals, localIndex);
-    printf("NAME OF SYMBOL S: %s, Value %i", s.name, s.value->read_as.I32);
     push(*(s.value));
+    //printf("Pushed\n");
+    //printf("NAME OF SYMBOL S: %s, Value %p\n", s.name, s.value->read_as.OBJ_PTR);
 }
 
 //Assignment
-static void global_I32(Segment* seg){
-    //Expect OP_DEF_I32 then the idnex inside the segment's ymbol table
-    //SymbolTable_dump(seg->symbols);
-    VM_walkStack();
+static void global_SVAR(Segment* seg){
     uint8_t localIndex = NEXT_BYTE();
     //printf("INDEX %i - %s\n", localIndex, SymbolTable_get_by_index(seg->symbols, 0).name);
     Value v = pop();
     Value* v_value = calloc(1, sizeof(Value));
     memcpy(v_value, &v, sizeof(Value));
-    printf("Memcpy in place");
-    printf("READING %i\n", v_value->read_as.I32);
+    //printf("Memcpy in place");
     Symbol s = SymbolTable_get_by_index(seg->symbols, localIndex);
     s.value = v_value;
-    printf("VALUE POINTER ON ASSIGN: %i\n", s.value->read_as.I32);
+    //printf("VALUE POINTER ON ASSIGN: %p\n", s.value->read_as.OBJ_PTR);
+    //printf("GOT %s, %i TYPE\n", s.name, s.type);
+    SymbolTable_push(vm.globals, s);
+    //SymbolTable_dump(vm.globals);
+    //printf("PUshed onto SymbolTable");
+
+//    printf("ALLOCATED GLOBAL %.*s - Value %i", SymbolTable_get(vm.globals, "x").nameLength, SymbolTable_get(vm.globals, "x")->.name, SymbolTable_get(vm.globals, "x")->value->read_as.I32);
+}
+
+
+static void global_I32(Segment* seg){
+    //Expect OP_DEF_I32 then the idnex inside the segment's ymbol table
+    //SymbolTable_dump(seg->symbols);
+    //VM_walkStack();
+    uint8_t localIndex = NEXT_BYTE();
+    //printf("INDEX %i - %s\n", localIndex, SymbolTable_get_by_index(seg->symbols, 0).name);
+    Value v = pop();
+    Value* v_value = calloc(1, sizeof(Value));
+    memcpy(v_value, &v, sizeof(Value));
+    //printf("Memcpy in place");
+    //printf("READING %i\n", v_value->read_as.I32);
+    Symbol s = SymbolTable_get_by_index(seg->symbols, localIndex);
+    s.value = v_value;
+    //printf("VALUE POINTER ON ASSIGN: %i\n", s.value->read_as.I32);
     //printf("GOT %s, %i TYPE\n", s.name, s.type);
     SymbolTable_push(vm.globals, s);
 
@@ -217,6 +242,9 @@ void VM_execute(Segment* seg){
             case OP_DEF_I32:
                 global_I32(seg);
                 break;
+            case OP_DEF_SVAR:
+                global_SVAR(seg);
+                break;
             case OP_ID:
                 push_var(seg);
                 break;
@@ -236,6 +264,11 @@ void VM_execute(Segment* seg){
                 printf("   | Instruction %s\n", OpCode_Disassemble(code));
                 return;
         }
+
+        #ifdef BORK_VM_TRACE
+            printf("WALKING STACK AFTER OPERATIONS\n");
+            VM_walkStack();
+        #endif
 
         //advance();
     }

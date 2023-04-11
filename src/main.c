@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "lexer.h"
-#include "debug.h"
+//#include "debug.h"
 #include "segment.h"
 #include "vm.h"
 
@@ -60,7 +60,7 @@ static char* readCode(const char* path){
 
 static void doFile(const char* path){
     char* code = readCode(path);
-    printf(code);
+    //printf(code);
     TokenStack* tokens = ParseCode(code);
     Compile_and_execute_Segment(tokens);
     TokenStack_free(tokens);

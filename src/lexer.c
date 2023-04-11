@@ -6,7 +6,7 @@
 
 #include "lexer.h"
 #include "common.h"
-#include "debug.h"
+//#include "debug.h"
 
 typedef struct {
     char*           current;
@@ -89,7 +89,7 @@ static bool isNumber(char c){
 }
 
 static bool isAlpha(char c){
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_');
 }
 
 static bool isAlphaNumeric(char c){
@@ -120,15 +120,20 @@ static void number(){
     }
     //Create a new number token
     TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_NUMBER));
-    printf("CONSIDERING CHAR AFTER NUMBER'%c'\n", *lex.current);
+    //printf("CONSIDERING CHAR AFTER NUMBER'%c'\n", *lex.current);
     return;
 }
 
 static void string(){
+   // advance();
     while(peek() != '"'){
         advance();
     }
+    advance();
+    //printf("Considering cursor '%c'\n", *lex.current);
     TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_STRING));
+    advance();
+    //printf("Pushed string Token.\n");
     return;
 }
 
@@ -158,8 +163,15 @@ static void identifier(){
                 return;
             }
         }
+        case 's':{
+            if(match(lex.previous, "string", 6) && !isAlphaNumeric(peek_n(6))){
+                advance_n(6);
+                TokenStack_push(lex.currentStack, makeToken(lex.previous, 6, TOKEN_SVAR));
+                return;
+            }
+        }
         default:
-            while(isAlpha(cursor())){
+            while(isAlpha(peek())){
                 advance();
             }
             TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous, TOKEN_ID));
@@ -171,7 +183,7 @@ static void identifier(){
 static void skipWhiteSpace(){
     while(cursor() == ' ' || cursor() == '\t' || cursor() == '\r'){
         advance();
-        printf("SKIPPING\n");
+        //printf("SKIPPING\n");
     }
 }
 
@@ -226,6 +238,7 @@ TokenStack* Lexer_parse() {
                 lex.char_offset = -1;
                 break;
             case '"':
+                ///printf("building string token\n");
                 string();
                 break;
             case ';':
