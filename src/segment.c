@@ -319,7 +319,9 @@ static void identifier(Segment* seg){
     //printf("IDENTIFIER TOKEN '%.*s'\n", seg->ip[-1].length, seg->ip[-1].start);
     memcpy(buffer, seg->ip[-1].start, seg->ip[-1].length);
     buffer[seg->ip[-1].length] = '\0';
+    printf("Symbol under cursor tye '%i' ;", seg->ip[-1].type);
     //printf("Seeking %s\n", buffer);
+    printf("LOOKING FOR SYMBOL '%.*s'\n", seg->ip[-1].length, buffer);
     uint8_t index = SymbolTable_get_index_of(seg->symbols, buffer); 
     if(index != -1){
         Segment_writeBytes(seg, OP_ID, index);

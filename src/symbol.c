@@ -76,7 +76,7 @@ uint8_t SymbolTable_get_index_of(SymbolTable* tbl, char* name){
         if(tbl->entries[i].type != SYMBOL_TOMBSTONE){
             if(strlen(tbl->entries[i].name) == strlen(name)){
                 if(strcmp(tbl->entries[i].name, name) == 0){
-                    //printf("INDEX_OF: %lli\n", i);
+                    printf("INDEX_OF: %li\n", i);
                     return i;
                 }
             }

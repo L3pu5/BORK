@@ -132,7 +132,7 @@ static void string(){
     advance();
     //printf("Considering cursor '%c'\n", *lex.current);
     TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_STRING));
-    advance();
+    //advance();
     //printf("Pushed string Token.\n");
     return;
 }
@@ -171,10 +171,10 @@ static void identifier(){
             }
         }
         default:
-            while(isAlpha(peek())){
+            while(isAlpha(peek()) && peek() != ';'){
                 advance();
             }
-            TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous, TOKEN_ID));
+            TokenStack_push(lex.currentStack, makeToken(lex.previous, lex.current - lex.previous + 1, TOKEN_ID));
             return;
     }
 

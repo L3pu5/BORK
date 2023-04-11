@@ -44,7 +44,7 @@ all: ${TARGET}
 # Build the application
 $(TARGET): $(OBJECTS)
 	@$(CC) -o $@ $^ $(LDLIBS)
-	$(TARGET)
+	./$(TARGET)
 
 file: $(OBJECTS)
 	@$(CC) -o $@ $^ $(LDLIBS)
