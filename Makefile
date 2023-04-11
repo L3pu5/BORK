@@ -22,7 +22,7 @@ VERSION := $(shell git describe --long --dirty --tags --always 2>/dev/null)
 CFLAGS += -I./include
 CFLAGS += -g -Wall
 CFLAGS += -Werror
-#LDLIBS += -lncurses -lpanel
+LDLIBS += -lm
 
 ## Define the Version for the Application
 CFLAGS += -DVERSION=\"$(VERSION)\"
@@ -44,11 +44,11 @@ all: ${TARGET}
 # Build the application
 $(TARGET): $(OBJECTS)
 	@$(CC) -o $@ $^ $(LDLIBS)
-	.\BORK
+	$(TARGET)
 
 file: $(OBJECTS)
 	@$(CC) -o $@ $^ $(LDLIBS)
-	.\BORK .\Example\Bork.bark
+	.\\BORK .\Example\Bork.bark
 
 
 clean:

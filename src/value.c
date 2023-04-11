@@ -7,7 +7,9 @@
 void value_to_string(Value value, char* buffer){
     switch(value.type){
         case VAL_I32:
-            itoa(value.read_as.I32, buffer, 10);
+            //Use Sprintf in place of itoa as its non-standard
+            sprintf(buffer, "%i", value.read_as.I32);
+            //itoa(value.read_as.I32, buffer, 10);
         break;
         case VAL_STR:
             Object_String* stringObject = ((Object_String*) (value.read_as.OBJ_PTR));
